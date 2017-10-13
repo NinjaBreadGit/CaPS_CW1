@@ -296,6 +296,7 @@ bool array2bmp(const std::string &filename, const vector<vec> &pixels, const siz
 
 int main(int argc, char **argv)
 {
+	time_t time_start = time(0);
 	random_device rd;
 	default_random_engine generator(rd());
 	uniform_real_distribution<double> distribution;
@@ -303,7 +304,7 @@ int main(int argc, char **argv)
 
 	// *** These parameters can be manipulated in the algorithm to modify work undertaken ***
 	constexpr size_t dimension = 1024;
-	constexpr size_t samples = 5; // Algorithm performs 4 * samples per pixel.
+	constexpr size_t samples = 2; // Algorithm performs 4 * samples per pixel.
 	vector<sphere> spheres
 	{
 		sphere(1e5, vec(1e5 + 1, 40.8, 81.6), vec(), vec(0.75, 0.25, 0.25), reflection_type::DIFFUSE),
@@ -346,9 +347,13 @@ int main(int argc, char **argv)
 			}
 		}
 	}
+	time_t time_running = difftime(time(0), time_start);
 	stringstream imageNameSS;
 	imageNameSS << "img_" << dimension << "_" << (samples * 4) << "_" << time(0) << ".bmp";
 	string imageName = imageNameSS.str();
+	std::ofstream outfile;
+	outfile.open("outputs.txt", std::ios_base::app);
+	outfile << imageName << " = " << time_running << " seconds with " << (samples * 4) << " samples per pixel." << endl << endl;	
 	cout << imageName << (array2bmp(imageName, pixels, dimension, dimension) ? " Saved\n" : " Save Failed\n");
 	return 0;
 }

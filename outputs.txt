@@ -1,0 +1,2 @@
+img_1024_8_1507920849.bmp = 53 seconds with 8 samples per pixel.
+
