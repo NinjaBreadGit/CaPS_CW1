@@ -1,13 +1,3 @@
-img_1024_4_1508582416.bmp = 26 seconds with 4 samples per pixel.
-img_1024_4_1508582451.bmp = 26 seconds with 4 samples per pixel.
-img_1024_4_1508582485.bmp = 26 seconds with 4 samples per pixel.
-img_1024_4_1508582559.bmp = 26 seconds with 4 samples per pixel.
-img_1024_4_1508582595.bmp = 26 seconds with 4 samples per pixel.
-
-img_1024_16_1508582752.bmp = 98 seconds with 16 samples per pixel.
-img_1024_16_1508582873.bmp = 99 seconds with 16 samples per pixel.
-img_1024_16_1508582985.bmp = 101 seconds with 16 samples per pixel.
-
 img_1024_4_1508583419.bmp = 26 seconds with 4 samples per pixel.
 img_1024_4_1508583447.bmp = 26 seconds with 4 samples per pixel.
 img_1024_4_1508583473.bmp = 26 seconds with 4 samples per pixel.
@@ -16,4 +6,38 @@ img_1024_4_1508583526.bmp = 26 seconds with 4 samples per pixel.
 img_1024_4_1508583552.bmp = 25 seconds with 4 samples per pixel.
 img_1024_16_1508583654.bmp = 101 seconds with 16 samples per pixel.
 img_1024_16_1508583760.bmp = 106 seconds with 16 samples per pixel.
+img_1024_16_1508584322.bmp = 99 seconds with 16 samples per pixel.
+img_1024_16_1508584424.bmp = 101 seconds with 16 samples per pixel.
+img_1024_16_1508584523.bmp = 99 seconds with 16 samples per pixel.
+img_1024_64_1508584910.bmp = 387 seconds with 64 samples per pixel.
+img_1024_64_1508585297.bmp = 387 seconds with 64 samples per pixel.
+img_1024_64_1508585685.bmp = 387 seconds with 64 samples per pixel.
+img_1024_64_1508586072.bmp = 387 seconds with 64 samples per pixel.
+img_1024_64_1508586460.bmp = 388 seconds with 64 samples per pixel.
+img_1024_256_1508588001.bmp = 1541 seconds with 256 samples per pixel.
+img_1024_256_1508589544.bmp = 1542 seconds with 256 samples per pixel.
 
+img_1024_64_1508592812.bmp = 204 seconds with 64 samples per pixel. Using OpenMP For Loop with 6 threads. With no Lock.
+
+img_1024_64_1508593793.bmp = 620 seconds with 64 samples per pixel. Using OpenMP For Loop with 6 threads.
+	omp_set_lock(&r_lock);
+	r = r + radiance(spheres, ray(camera.origin + direction * 140, direction.normal()), 0) * (1.0 / samples);
+	omp_unset_lock(&r_lock);
+
+img_1024_64_1508594340.bmp = 204 seconds with 64 samples per pixel. Using OpenMP For Loop with 6 threads.
+	#pragma omp parallel for num_threads(num_threads) shared (r)
+
+img_1024_64_1508594807.bmp = 206 seconds with 64 samples per pixel. Using OpenMP For Loop with 6 threads.
+img_1024_64_1508595113.bmp = 206 seconds with 64 samples per pixel. Using OpenMP For Loop with 6 threads.
+img_1024_64_1508595339.bmp = 225 seconds with 64 samples per pixel. Using OpenMP For Loop with 6 threads.
+img_1024_64_1508595552.bmp = 213 seconds with 64 samples per pixel. Using OpenMP For Loop with 6 threads.
+img_1024_64_1508595756.bmp = 204 seconds with 64 samples per pixel. Using OpenMP For Loop with 6 threads.
+	vec r_addition = radiance(spheres, ray(camera.origin + direction * 140, direction.normal()), 0) * (1.0 / samples);
+	r = r + r_addition;
+
+img_1024_64_1508596293.bmp = 202 seconds with 64 samples per pixel. Using OpenMP For Loop with 6 threads.
+img_1024_64_1508596496.bmp = 202 seconds with 64 samples per pixel. Using OpenMP For Loop with 6 threads.
+img_1024_64_1508596698.bmp = 201 seconds with 64 samples per pixel. Using OpenMP For Loop with 6 threads.
+img_1024_64_1508596900.bmp = 202 seconds with 64 samples per pixel. Using OpenMP For Loop with 6 threads.
+	r = r + radiance(spheres, ray(camera.origin + direction * 140, direction.normal()), 0) * (1.0 / samples);
+	

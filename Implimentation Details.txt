@@ -1,1 +1,13 @@
 Analyze > Performance Profiler > CPU USage: True > Click 'Start' 
+
+https://www.codeproject.com/Tips/712107/Simple-introduction-to-std-future-and-std-async
+https://www.justsoftwaresolutions.co.uk/threading/multithreading-in-c++0x-part-8-futures-and-promises.html
+http://en.cppreference.com/w/cpp/atomic/atomic/fetch_add
+https://www.cs.cmu.edu/~15210/pasl.html
+http://supercomputingblog.com/openmp/tutorial-parallel-for-loops-with-openmp/
+
+omp_set_lock(&r_lock);
+r = r + radiance(spheres, ray(camera.origin + direction * 140, direction.normal()), 0) * (1.0 / samples);
+omp_unset_lock(&r_lock);
+	Caused huge slowdown
+
