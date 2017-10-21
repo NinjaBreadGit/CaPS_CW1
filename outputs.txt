@@ -1,2 +1,19 @@
-img_1024_8_1507920849.bmp = 53 seconds with 8 samples per pixel.
+img_1024_4_1508582416.bmp = 26 seconds with 4 samples per pixel.
+img_1024_4_1508582451.bmp = 26 seconds with 4 samples per pixel.
+img_1024_4_1508582485.bmp = 26 seconds with 4 samples per pixel.
+img_1024_4_1508582559.bmp = 26 seconds with 4 samples per pixel.
+img_1024_4_1508582595.bmp = 26 seconds with 4 samples per pixel.
+
+img_1024_16_1508582752.bmp = 98 seconds with 16 samples per pixel.
+img_1024_16_1508582873.bmp = 99 seconds with 16 samples per pixel.
+img_1024_16_1508582985.bmp = 101 seconds with 16 samples per pixel.
+
+img_1024_4_1508583419.bmp = 26 seconds with 4 samples per pixel.
+img_1024_4_1508583447.bmp = 26 seconds with 4 samples per pixel.
+img_1024_4_1508583473.bmp = 26 seconds with 4 samples per pixel.
+img_1024_4_1508583500.bmp = 26 seconds with 4 samples per pixel.
+img_1024_4_1508583526.bmp = 26 seconds with 4 samples per pixel.
+img_1024_4_1508583552.bmp = 25 seconds with 4 samples per pixel.
+img_1024_16_1508583654.bmp = 101 seconds with 16 samples per pixel.
+img_1024_16_1508583760.bmp = 106 seconds with 16 samples per pixel.
 
