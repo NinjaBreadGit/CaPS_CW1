@@ -4,16 +4,19 @@ img_1024_4_1508583473.bmp = 26 seconds with 4 samples per pixel.
 img_1024_4_1508583500.bmp = 26 seconds with 4 samples per pixel.
 img_1024_4_1508583526.bmp = 26 seconds with 4 samples per pixel.
 img_1024_4_1508583552.bmp = 25 seconds with 4 samples per pixel.
+
 img_1024_16_1508583654.bmp = 101 seconds with 16 samples per pixel.
 img_1024_16_1508583760.bmp = 106 seconds with 16 samples per pixel.
 img_1024_16_1508584322.bmp = 99 seconds with 16 samples per pixel.
 img_1024_16_1508584424.bmp = 101 seconds with 16 samples per pixel.
 img_1024_16_1508584523.bmp = 99 seconds with 16 samples per pixel.
+
 img_1024_64_1508584910.bmp = 387 seconds with 64 samples per pixel.
 img_1024_64_1508585297.bmp = 387 seconds with 64 samples per pixel.
 img_1024_64_1508585685.bmp = 387 seconds with 64 samples per pixel.
 img_1024_64_1508586072.bmp = 387 seconds with 64 samples per pixel.
 img_1024_64_1508586460.bmp = 388 seconds with 64 samples per pixel.
+
 img_1024_256_1508588001.bmp = 1541 seconds with 256 samples per pixel.
 img_1024_256_1508589544.bmp = 1542 seconds with 256 samples per pixel.
 
@@ -26,6 +29,7 @@ img_1024_64_1508593793.bmp = 620 seconds with 64 samples per pixel. Using OpenMP
 
 img_1024_64_1508594340.bmp = 204 seconds with 64 samples per pixel. Using OpenMP For Loop with 6 threads.
 	#pragma omp parallel for num_threads(num_threads) shared (r)
+	https://msdn.microsoft.com/en-us/library/tbfc87h6.aspx
 
 img_1024_64_1508594807.bmp = 206 seconds with 64 samples per pixel. Using OpenMP For Loop with 6 threads.
 img_1024_64_1508595113.bmp = 206 seconds with 64 samples per pixel. Using OpenMP For Loop with 6 threads.
@@ -40,4 +44,55 @@ img_1024_64_1508596496.bmp = 202 seconds with 64 samples per pixel. Using OpenMP
 img_1024_64_1508596698.bmp = 201 seconds with 64 samples per pixel. Using OpenMP For Loop with 6 threads.
 img_1024_64_1508596900.bmp = 202 seconds with 64 samples per pixel. Using OpenMP For Loop with 6 threads.
 	r = r + radiance(spheres, ray(camera.origin + direction * 140, direction.normal()), 0) * (1.0 / samples);
+	
+img_1024_64_1508605510.bmp = 203 seconds with 64 samples per pixel. Using OpenMP For Loop with 6 threads.
+	#pragma omp parallel for num_threads(num_threads) shared (r) schedule (dynamic, num_threads/samples)
+
+img_1024_64_1508607029.bmp = 203 seconds with 64 samples per pixel. Using OpenMP For Loop with 6 threads.
+	#pragma omp simd shared (r)
+
+img_1024_64_1508607941.bmp = 200 seconds with 64 samples per pixel. Using OpenMP For Loop with 6 threads.
+	#pragma omp simd shared (r)
+
+img_1024_64_1508608243.bmp = 200 seconds with 64 samples per pixel. Using OpenMP For Loop with 6 threads.
+	#pragma omp parallel for num_threads(num_threads) shared (r) schedule (dynamic, 2)
+	
+img_1024_64_1508608498.bmp = 219 seconds with 64 samples per pixel. Using OpenMP For Loop with 6 threads.
+	#pragma omp parallel for num_threads(num_threads) shared (r) schedule (dynamic, 4)
+
+img_1024_1024_1508614988.bmp = 6134 seconds with 1024 samples per pixel.
+
+img_1024_4096_1508639558.bmp =  seconds with 4096 samples per pixel.
+
+img_1024_4_1508668487.bmp = 46 seconds with 4 samples per pixel. Using OpenMP For Loop with 6 threads.
+img_1024_4_1508668535.bmp = 46 seconds with 4 samples per pixel. Using OpenMP For Loop with 6 threads.
+img_1024_4_1508668581.bmp = 46 seconds with 4 samples per pixel. Using OpenMP For Loop with 6 threads.
+img_1024_4_1508668628.bmp = 46 seconds with 4 samples per pixel. Using OpenMP For Loop with 6 threads.
+img_1024_4_1508668674.bmp = 46 seconds with 4 samples per pixel. Using OpenMP For Loop with 6 threads.
+
+img_1024_16_1508668789.bmp = 114 seconds with 16 samples per pixel. Using OpenMP For Loop with 6 threads.
+img_1024_16_1508668904.bmp = 114 seconds with 16 samples per pixel. Using OpenMP For Loop with 6 threads.
+img_1024_16_1508669019.bmp = 114 seconds with 16 samples per pixel. Using OpenMP For Loop with 6 threads.
+img_1024_16_1508669134.bmp = 114 seconds with 16 samples per pixel. Using OpenMP For Loop with 6 threads.
+img_1024_16_1508669249.bmp = 114 seconds with 16 samples per pixel. Using OpenMP For Loop with 6 threads.
+
+img_1024_64_1508669448.bmp = 199 seconds with 64 samples per pixel. Using OpenMP For Loop with 6 threads.
+img_1024_64_1508669647.bmp = 199 seconds with 64 samples per pixel. Using OpenMP For Loop with 6 threads.
+img_1024_64_1508669846.bmp = 199 seconds with 64 samples per pixel. Using OpenMP For Loop with 6 threads.
+img_1024_64_1508670049.bmp = 203 seconds with 64 samples per pixel. Using OpenMP For Loop with 6 threads.
+img_1024_64_1508670248.bmp = 198 seconds with 64 samples per pixel. Using OpenMP For Loop with 6 threads.
+
+img_1024_256_1508674214.bmp = 651 seconds with 256 samples per pixel. Using OpenMP For Loop with 6 threads.
+img_1024_256_1508674865.bmp = 649 seconds with 256 samples per pixel. Using OpenMP For Loop with 6 threads.
+
+img_1024_256_1508685427.bmp = 735 seconds with 256 samples per pixel. Using OpenMP For Loop with 6 threads. 1024 threads spun.
+	thread t(create_thread);
+	t.join();
+	inside y loop
+
+	Placing the-
+		thread t(create_thread);
+		t.join();
+	inside the x loop fails to complete. It grinds to a hault.
+	
 	

@@ -16,6 +16,7 @@
 #include <sstream>
 #include <thread>
 #include <omp.h>
+#include <future>
 
 using namespace std;
 using namespace std::chrono;
@@ -154,17 +155,25 @@ inline bool intersect(const vector<sphere> &spheres, const ray &ray, double &dis
 	return distance < maximum_distance;
 }
 
+void empty() {}
+
 vec radiance(const vector<sphere> &spheres, const ray &the_ray, int depth) noexcept
 {
+
+#pragma region 
 	static random_device rd;
 	static default_random_engine generator(rd());
 	static uniform_real_distribution<double> distribution;
 	static auto get_random_number = bind(distribution, generator);
-
 	double distance;
 	size_t sphere_index;
 	if (!intersect(spheres, the_ray, distance, sphere_index))
+	{
 		return vec();
+	}
+#pragma endregion Region 1 cannot be parallelized due to sequential dependencies
+
+#pragma region
 	const sphere &hit_sphere = spheres[sphere_index];
 	vec hit_point = the_ray.origin + the_ray.direction * distance;
 	vec intersection_normal = (hit_point - hit_sphere.position).normal();
@@ -186,15 +195,41 @@ vec radiance(const vector<sphere> &spheres, const ray &the_ray, int depth) noexc
 			return hit_sphere.emission;
 		}
 	}
+#pragma endregion Region 2 cannot be parallelized due to sequential dependencies
 
 	if (hit_sphere.reflection == reflection_type::DIFFUSE)
-	{
+	{		
+		//double r1, r2;
+		//vec w, u, v;
+		//thread t_r1([&r1] {
+		//	r1 = 2.0 * PI * get_random_number();
+		//});
+		//thread t_r2([&r2] {
+		//	r2 = get_random_number();
+		//});
+		//thread t_w_u_v([pos_intersection_normal, &w, &u, &v] {
+		//	vec w = pos_intersection_normal;
+		//	vec u = ((abs(w.x) > 0.1 ? vec(0, 1, 0) : vec(1, 0, 0)).cross(w)).normal();
+		//	vec v = w.cross(u);
+		//});		
+		//t_r1.join();
+		//t_r2.join();
+		//t_w_u_v.join();
+		
+		//std::shared_future<double> r1 = std::async(std::launch::async, [] {return 2.0 * PI * get_random_number(); });
+		//std::shared_future<double> r2 = std::async(std::launch::async, [] {return get_random_number(); });
+		//vec w = pos_intersection_normal;
+		//vec u = ((abs(w.x) > 0.1 ? vec(0, 1, 0) : vec(1, 0, 0)).cross(w)).normal();
+		//vec v = w.cross(u);
+		//vec new_direction = (u * cos(r1.get()) * sqrt(r2.get()) + v * sin(r1.get()) * sqrt(r2.get()) + w * sqrt(1 - r2.get())).normal();
+		
 		double r1 = 2.0 * PI * get_random_number();
 		double r2 = get_random_number();
 		vec w = pos_intersection_normal;
 		vec u = ((abs(w.x) > 0.1 ? vec(0, 1, 0) : vec(1, 0, 0)).cross(w)).normal();
 		vec v = w.cross(u);
 		vec new_direction = (u * cos(r1) * sqrt(r2) + v * sin(r1) * sqrt(r2) + w * sqrt(1 - r2)).normal();
+
 		return hit_sphere.emission + colour.mult(radiance(spheres, ray(hit_point, new_direction), depth));
 	}
 	else if (hit_sphere.reflection == reflection_type::SPECULAR)
@@ -296,10 +331,17 @@ bool array2bmp(const std::string &filename, const vector<vec> &pixels, const siz
 	return f.good();
 }
 
+int threads_created = 0;
+
+void create_thread()
+{
+	threads_created++;
+}
+
 int main(int argc, char **argv)
 {
 	auto num_threads = thread::hardware_concurrency();
-	for (int run = 11; run < 12; run++)
+	for (int run = 15; run < 16; run++)
 	{
 		time_t time_start = time(0);
 		random_device rd;
@@ -315,19 +357,19 @@ int main(int argc, char **argv)
 		default:
 			samples = 1;
 			break;
-		case 6:	case 7:	case 8:	case 9:	case 10:
+		case 5:	case 6:	case 7:	case 8:	case 9:
 			samples = 4;
 			break;
-		case 11: case 12: case 13: case 14: case 15:
+		case 10: case 11: case 12: case 13: case 14:
 			samples = 16;
 			break;
-		case 16: case 17:
+		case 15: case 16:
 			samples = 64;
 			break;
-		case 18: case 19:
+		case 17:
 			samples = 256;
 			break;
-		case 20: case 21:
+		case 18:
 			samples = 1024;
 			break;	
 		}
@@ -350,8 +392,6 @@ int main(int argc, char **argv)
 		vec cy = (cx.cross(camera.direction)).normal() * 0.5135;
 		vec r;
 		vector<vec> pixels(dimension * dimension);
-		omp_lock_t r_lock;
-		omp_init_lock(&r_lock);
 		for (int y = 0; y < dimension; ++y)
 		{
 			cout << "Rendering " << dimension << " * " << dimension << " pixels. Samples: " << samples * 4 << " spp (" << 100.0 * y / (dimension - 1) << ")" << endl;
@@ -362,7 +402,8 @@ int main(int argc, char **argv)
 					for (size_t sx = 0; sx < 2; ++sx)
 					{
 						r = vec();
-#pragma omp parallel for num_threads(num_threads) shared (r)
+//#pragma omp simd shared (r)
+#pragma omp parallel for num_threads(num_threads) shared (r) schedule (dynamic, 3)
 						for (int s = 0; s < samples; ++s)
 						{
 							double r1 = 2 * get_random_number(), dx = r1 < 1 ? sqrt(r1) - 1 : 1 - sqrt(2 - r1);
@@ -381,7 +422,7 @@ int main(int argc, char **argv)
 		string imageName = imageNameSS.str();
 		std::ofstream outfile;
 		outfile.open("outputs.txt", std::ios_base::app);
-		outfile << imageName << " = " << time_running << " seconds with " << (samples * 4) << " samples per pixel. Using OpenMP For Loop with " << num_threads << " threads."<< endl;
+		outfile << imageName << " = " << time_running << " seconds with " << (samples * 4) << " samples per pixel. Using OpenMP For Loop with " << num_threads << " threads." << endl;
 		cout << imageName << (array2bmp(imageName, pixels, dimension, dimension) ? " Saved\n" : " Save Failed\n");
 	}
 	return 0;
