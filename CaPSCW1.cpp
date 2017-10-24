@@ -17,9 +17,12 @@
 #include <thread>
 #include <omp.h>
 #include <future>
+#include <mutex>
 
 using namespace std;
 using namespace std::chrono;
+
+std::mutex mtx;
 
 constexpr size_t MAX_DEPTH = 512; // Upper limit on recursion, increase this on systems with more stack size.
 constexpr double PI = 3.14159265359;
@@ -331,101 +334,161 @@ bool array2bmp(const std::string &filename, const vector<vec> &pixels, const siz
 	return f.good();
 }
 
-int threads_created = 0;
+ray camera(vec(50, 52, 295.6), vec(0, -0.042612, -1).normal());
+vec cx = vec(0.5135);
+vec cy = (cx.cross(camera.direction)).normal() * 0.5135;
+constexpr int dimension = 1024;
+vector<vec> pixels(dimension * dimension);
+vector<sphere> spheres
 
-void create_thread()
 {
-	threads_created++;
+	sphere(1e5, vec(1e5 + 1, 40.8, 81.6), vec(), vec(0.75, 0.25, 0.25), reflection_type::DIFFUSE),
+	sphere(1e5, vec(-1e5 + 99, 40.8, 81.6), vec(), vec(0.25, 0.25, 0.75), reflection_type::DIFFUSE),
+	sphere(1e5, vec(50, 40.8, 1e5), vec(), vec(0.75, 0.75, 0.75), reflection_type::DIFFUSE),
+	sphere(1e5, vec(50, 40.8, -1e5 + 170), vec(), vec(), reflection_type::DIFFUSE),
+	sphere(1e5, vec(50, 1e5, 81.6), vec(), vec(0.75, 0.75, 0.75), reflection_type::DIFFUSE),
+	sphere(1e5, vec(50, -1e5 + 81.6, 81.6), vec(), vec(0.75, 0.75, 0.75), reflection_type::DIFFUSE),
+	sphere(16.5, vec(27, 16.5, 47), vec(), vec(1, 1, 1) * 0.999, reflection_type::SPECULAR),
+	sphere(16.5, vec(73, 16.5, 78), vec(), vec(1, 1, 1) * 0.999, reflection_type::REFRACTIVE),
+	sphere(600, vec(50, 681.6 - 0.27, 81.6), vec(12, 12, 12), vec(), reflection_type::DIFFUSE)
+};
+
+void trace_section(int y_start, int x_start, int y_end, int x_end, int samples, double rand1, double rand2)
+{
+	for (size_t y = y_start; y < y_end; y++)
+	{
+		for (size_t x = x_start; x < x_end; x++)
+		{
+			cout << "Rendering pixel " << ((y * y_end) + x) << " / " << (y_end * x_end) << endl;
+			/*
+			for (int sy = 0, i = (x_end - y - 1) * y_end + x; sy < 2; ++sy)
+			// This calculation of i creates a horizontally stretched image,
+			// that is composed of several smaller images. 
+			*/
+			for (int sy = 0, i = (dimension - y - 1) * dimension + x; sy < 2; ++sy)
+			// This calculation of i creates a single image that is the correct ratio, 
+			// but depicts the entire image, rather than a cropped portion of it  
+			{
+				for (int sx = 0; sx < 2; ++sx)
+				{
+					vec r = vec();
+					for (int s = 0; s < samples; ++s)
+					{
+						double r1 = 2 * rand1, dx = r1 < 1 ? sqrt(r1) - 1 : 1 - sqrt(2 - r1);
+						double r2 = 2 * rand2, dy = r2 < 1 ? sqrt(r2) - 1 : 1 - sqrt(2 - r2);
+						vec direction = cx * static_cast<double>(((sx + 0.5 + dx) / 2 + x) / x_end - 0.5) + cy * static_cast<double>(((sy + 0.5 + dy) / 2 + y) / y_end - 0.5) + camera.direction;
+						r = r + radiance(spheres, ray(camera.origin + direction * 140, direction.normal()), 0) * (1.0 / samples);
+					}
+					mtx.lock();
+					pixels[i] = pixels[i] + vec(clamp(r.x, 0.0, 1.0), clamp(r.y, 0.0, 1.0), clamp(r.z, 0.0, 1.0)) * 0.25;
+					mtx.unlock();
+				}
+			}
+		}
+	}
 }
 
 int main(int argc, char **argv)
 {
+	random_device rd;
+	default_random_engine generator(rd());
+	uniform_real_distribution<double> distribution;
+	auto get_random_number = bind(distribution, generator);
+
+	int samples = 1; // Algorithm performs 4 * samples per pixel.
+	
+	time_t time_start = time(0);
+
+	//thread t1(trace_section, 0, 0, 512, 512, samples, get_random_number(), get_random_number());
+	//thread t2(trace_section, 0, 512, 512, 1024, samples, get_random_number(), get_random_number());
+	//thread t3(trace_section, 512, 0, 1024, 512, samples, get_random_number(), get_random_number());
+	//thread t4(trace_section, 512, 512, 1024, 1024, samples, get_random_number(), get_random_number());
+
+	thread t1(trace_section, 512, 512, 1024, 1024, samples, get_random_number(), get_random_number());
+	thread t2(trace_section, 512, 512, 1024, 1024, samples, get_random_number(), get_random_number());
+	//thread t3(trace_section, 512, 512, 1024, 1024, samples, get_random_number(), get_random_number());
+	//thread t4(trace_section, 512, 512, 1024, 1024, samples, get_random_number(), get_random_number());
+
+	t1.join();
+	t2.join();
+	//t3.join();
+	//t4.join();
+
+#pragma region
+	time_t time_running = difftime(time(0), time_start);
+	stringstream imageNameSS;
+	imageNameSS << "img_" << dimension << "_" << (samples * 4) << "_" << time(0) << ".bmp";
+	string imageName = imageNameSS.str();
+	std::ofstream outfile;
+	outfile.open("outputs.txt", std::ios_base::app);
+	outfile << imageName << " = " << time_running << " seconds with " << (samples * 4) << " samples per pixel. Produced with 4 threads and trace_section()" << endl;
+	cout << imageName << (array2bmp(imageName, pixels, dimension, dimension) ? " Saved\n" : " Save Failed\n");
+#pragma endregion output
+	return 0;
+	
+	/*
 	auto num_threads = thread::hardware_concurrency();
-	for (int run = 15; run < 16; run++)
+	time_t time_start = time(0);
+	random_device rd;
+	default_random_engine generator(rd());
+	uniform_real_distribution<double> distribution;
+	auto get_random_number = bind(distribution, generator);
+
+	constexpr size_t dimension = 1024;
+	size_t samples = 1; // Algorithm performs 4 * samples per pixel.
+	vector<sphere> spheres
 	{
-		time_t time_start = time(0);
-		random_device rd;
-		default_random_engine generator(rd());
-		uniform_real_distribution<double> distribution;
-		auto get_random_number = bind(distribution, generator);
+		sphere(1e5, vec(1e5 + 1, 40.8, 81.6), vec(), vec(0.75, 0.25, 0.25), reflection_type::DIFFUSE),
+		sphere(1e5, vec(-1e5 + 99, 40.8, 81.6), vec(), vec(0.25, 0.25, 0.75), reflection_type::DIFFUSE),
+		sphere(1e5, vec(50, 40.8, 1e5), vec(), vec(0.75, 0.75, 0.75), reflection_type::DIFFUSE),
+		sphere(1e5, vec(50, 40.8, -1e5 + 170), vec(), vec(), reflection_type::DIFFUSE),
+		sphere(1e5, vec(50, 1e5, 81.6), vec(), vec(0.75, 0.75, 0.75), reflection_type::DIFFUSE),
+		sphere(1e5, vec(50, -1e5 + 81.6, 81.6), vec(), vec(0.75, 0.75, 0.75), reflection_type::DIFFUSE),
+		sphere(16.5, vec(27, 16.5, 47), vec(), vec(1, 1, 1) * 0.999, reflection_type::SPECULAR),
+		sphere(16.5, vec(73, 16.5, 78), vec(), vec(1, 1, 1) * 0.999, reflection_type::REFRACTIVE),
+		sphere(600, vec(50, 681.6 - 0.27, 81.6), vec(12, 12, 12), vec(), reflection_type::DIFFUSE)
+	};
+	// **************************************************************************************
 
-		// *** These parameters can be manipulated in the algorithm to modify work undertaken ***
-		constexpr int dimension = 1024;
-		int samples = 1; // Algorithm performs 4 * samples per pixel.
-		switch (run) 
-		{
-		default:
-			samples = 1;
-			break;
-		case 5:	case 6:	case 7:	case 8:	case 9:
-			samples = 4;
-			break;
-		case 10: case 11: case 12: case 13: case 14:
-			samples = 16;
-			break;
-		case 15: case 16:
-			samples = 64;
-			break;
-		case 17:
-			samples = 256;
-			break;
-		case 18:
-			samples = 1024;
-			break;	
-		}
-		vector<sphere> spheres
-		{
-			sphere(1e5, vec(1e5 + 1, 40.8, 81.6), vec(), vec(0.75, 0.25, 0.25), reflection_type::DIFFUSE),
-			sphere(1e5, vec(-1e5 + 99, 40.8, 81.6), vec(), vec(0.25, 0.25, 0.75), reflection_type::DIFFUSE),
-			sphere(1e5, vec(50, 40.8, 1e5), vec(), vec(0.75, 0.75, 0.75), reflection_type::DIFFUSE),
-			sphere(1e5, vec(50, 40.8, -1e5 + 170), vec(), vec(), reflection_type::DIFFUSE),
-			sphere(1e5, vec(50, 1e5, 81.6), vec(), vec(0.75, 0.75, 0.75), reflection_type::DIFFUSE),
-			sphere(1e5, vec(50, -1e5 + 81.6, 81.6), vec(), vec(0.75, 0.75, 0.75), reflection_type::DIFFUSE),
-			sphere(16.5, vec(27, 16.5, 47), vec(), vec(1, 1, 1) * 0.999, reflection_type::SPECULAR),
-			sphere(16.5, vec(73, 16.5, 78), vec(), vec(1, 1, 1) * 0.999, reflection_type::REFRACTIVE),
-			sphere(600, vec(50, 681.6 - 0.27, 81.6), vec(12, 12, 12), vec(), reflection_type::DIFFUSE)
-		};
-		// **************************************************************************************
+	ray camera(vec(50, 52, 295.6), vec(0, -0.042612, -1).normal());
+	vec cx = vec(0.5135);
+	vec cy = (cx.cross(camera.direction)).normal() * 0.5135;
+	vec r;
+	vector<vec> pixels(dimension * dimension);
 
-		ray camera(vec(50, 52, 295.6), vec(0, -0.042612, -1).normal());
-		vec cx = vec(0.5135);
-		vec cy = (cx.cross(camera.direction)).normal() * 0.5135;
-		vec r;
-		vector<vec> pixels(dimension * dimension);
-		for (int y = 0; y < dimension; ++y)
+	for (size_t y = 0; y < dimension; ++y)
+	{
+		cout << "Rendering " << dimension << " * " << dimension << " pixels. Samples: " << samples * 4 << " spp (" << 100.0 * y / (dimension - 1) << ")" << endl;
+		for (size_t x = 0; x < dimension; ++x)
 		{
-			cout << "Rendering " << dimension << " * " << dimension << " pixels. Samples: " << samples * 4 << " spp (" << 100.0 * y / (dimension - 1) << ")" << endl;
-			for (size_t x = 0; x < dimension; ++x)
+			for (size_t sy = 0, i = (dimension - y - 1) * dimension + x; sy < 2; ++sy)
 			{
-				for (size_t sy = 0, i = (dimension - y - 1) * dimension + x; sy < 2; ++sy)
+				for (size_t sx = 0; sx < 2; ++sx)
 				{
-					for (size_t sx = 0; sx < 2; ++sx)
+					r = vec();
+#pragma omp parallel for shared(r) schedule(dynamic, 3) num_threads(num_threads)
+					for (int s = 0; s < samples; ++s)
 					{
-						r = vec();
-//#pragma omp simd shared (r)
-#pragma omp parallel for num_threads(num_threads) shared (r) schedule (dynamic, 3)
-						for (int s = 0; s < samples; ++s)
-						{
-							double r1 = 2 * get_random_number(), dx = r1 < 1 ? sqrt(r1) - 1 : 1 - sqrt(2 - r1);
-							double r2 = 2 * get_random_number(), dy = r2 < 1 ? sqrt(r2) - 1 : 1 - sqrt(2 - r2);
-							vec direction = cx * static_cast<double>(((sx + 0.5 + dx) / 2 + x) / dimension - 0.5) + cy * static_cast<double>(((sy + 0.5 + dy) / 2 + y) / dimension - 0.5) + camera.direction;
-							r = r + radiance(spheres, ray(camera.origin + direction * 140, direction.normal()), 0) * (1.0 / samples);
-						}
-						pixels[i] = pixels[i] + vec(clamp(r.x, 0.0, 1.0), clamp(r.y, 0.0, 1.0), clamp(r.z, 0.0, 1.0)) * 0.25;
+						double r1 = 2 * get_random_number(), dx = r1 < 1 ? sqrt(r1) - 1 : 1 - sqrt(2 - r1);
+						double r2 = 2 * get_random_number(), dy = r2 < 1 ? sqrt(r2) - 1 : 1 - sqrt(2 - r2);
+						vec direction = cx * static_cast<double>(((sx + 0.5 + dx) / 2 + x) / dimension - 0.5) + cy * static_cast<double>(((sy + 0.5 + dy) / 2 + y) / dimension - 0.5) + camera.direction;
+						r = r + radiance(spheres, ray(camera.origin + direction * 140, direction.normal()), 0) * (1.0 / samples);
 					}
+					pixels[i] = pixels[i] + vec(clamp(r.x, 0.0, 1.0), clamp(r.y, 0.0, 1.0), clamp(r.z, 0.0, 1.0)) * 0.25;
 				}
 			}
 		}
-		time_t time_running = difftime(time(0), time_start);
-		stringstream imageNameSS;
-		imageNameSS << "img_" << dimension << "_" << (samples * 4) << "_" << time(0) << ".bmp";
-		string imageName = imageNameSS.str();
-		std::ofstream outfile;
-		outfile.open("outputs.txt", std::ios_base::app);
-		outfile << imageName << " = " << time_running << " seconds with " << (samples * 4) << " samples per pixel. Using OpenMP For Loop with " << num_threads << " threads." << endl;
-		cout << imageName << (array2bmp(imageName, pixels, dimension, dimension) ? " Saved\n" : " Save Failed\n");
 	}
+	time_t time_running = difftime(time(0), time_start);
+	stringstream imageNameSS;
+	imageNameSS << "img_" << dimension << "_" << (samples * 4) << "_" << time(0) << ".bmp";
+	string imageName = imageNameSS.str();
+	std::ofstream outfile;
+	outfile.open("outputs.txt", std::ios_base::app);
+	outfile << imageName << " = " << time_running << " seconds with " << (samples * 4) << " samples per pixel. Using " << num_threads << " threads  in OPenMP loop" << endl;
+	cout << imageName << (array2bmp(imageName, pixels, dimension, dimension) ? " Saved\n" : " Save Failed\n");
 	return 0;
+	*/
 }
 
 /*
